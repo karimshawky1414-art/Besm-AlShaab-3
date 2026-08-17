@@ -1,0 +1,42 @@
+name: build-apk
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # لو المشروع مرفوع كملف مضغوط، فُكّه الأول
+      - name: unzip if needed
+        run: |
+          if [ ! -f settings.gradle ]; then
+            for z in *.zip; do [ -e "$z" ] && unzip -q -o "$z"; done
+            if [ -d BasmElShaab ]; then
+              cp -r BasmElShaab/. .
+            fi
+          fi
+          ls -la
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v3
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: build debug APK
+        run: gradle assembleDebug --no-daemon --stacktrace
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BasmElShaab-APK
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
